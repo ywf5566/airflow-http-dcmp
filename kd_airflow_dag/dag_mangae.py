@@ -145,17 +145,18 @@ class HttpNewDag(object):
 class HttpNewTask(object):
     """ 创建一个新的task，用于组装dag，默认执行本地bash命令，如需在别的服务器上执行，task_type为SSH，并带入SSH_conn_id """
 
-    def __init__(self, task_name, command, upstreams=[], task_type="Bash", SSH_conn_id="undefined"):
+    def __init__(self, task_name, command, upstreams=[], task_type="Bash", SSH_conn_id="undefined", trigger_rule="all_success"):
         self.task_name = task_name
         """ task_type : [Bash, SSH, TriggerDagRun] """
         self.task_type = task_type
         self.command = command + " "
         self.upstreams = upstreams
         self.SSH_conn_id = SSH_conn_id
+        self.trigger_rule = trigger_rule
 
     def get_dict(self):
         return {"task_name": self.task_name, "task_type": self.task_type, "command": self.command,
-                "upstreams": self.upstreams, "SSH_conn_id": self.SSH_conn_id}
+                "upstreams": self.upstreams, "SSH_conn_id": self.SSH_conn_id, "trigger_rule": self.trigger_rule}
 
 
 

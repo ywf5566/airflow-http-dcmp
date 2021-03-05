@@ -1,6 +1,6 @@
 # encoding: utf-8
 LOGIN_URL_BASE = 'http://{}:28080/admin/airflow/login'
-LOGIN_USER_BASE = 'afroot{}'
+LOGIN_USER_BASE = 'model{}'
 LOGIN_PWD_BASE = 'seekdata{}'
 KD01_SSH_USER = 'keydriver'
 KD01_SSH_PWD = '123456'
