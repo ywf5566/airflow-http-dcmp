@@ -125,7 +125,8 @@ class HttpNewDag(object):
         self.cron = cron
         if cron is None:
             """ 如果没有cron， start_date 默认设置为两天前"""
-            self.start_date = datetime.now() - timedelta(days=2)
+            self.cron = "None"
+            self.start_date = str(datetime.now().replace(microsecond=0) - timedelta(days=2))
         else:
             """ 如果有cron，但是没有start_date，通过cron计算开始时间"""
             if start_date is None:
