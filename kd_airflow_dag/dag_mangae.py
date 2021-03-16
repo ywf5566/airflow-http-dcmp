@@ -14,6 +14,9 @@ from croniter import croniter
 通过Http请求的方式向airflow-dcmp插件进行Dag任务的管理
 '''
 
+SUCCESS = 'success'
+FAILED = 'failed'
+
 
 class HttpDcmp(object):
     """ 初始化需要传入的参数：host,(kd01 或者 192.168.100.199) """
@@ -49,6 +52,10 @@ class HttpDcmp(object):
     """ 创建dag任务， """
 
     def creat_dag_request(self, newDag):
+        """
+        :param newDag:
+        :return:
+        """
         if not isinstance(newDag, dict):
             newDag = newDag.get_dict()
         session = requests.session()
@@ -56,9 +63,12 @@ class HttpDcmp(object):
         res = session.post(url=creat_api, headers=utils.LOGIN_HEADER_BASE, data=json.dumps(newDag))
         print("创建任务post请求状态码：{}".format(res.status_code))
 
-    """ 通过dcmp和airflow的api请求删除dag任务 """
-
     def delete_dag_request(self, dag_name):
+        """
+        通过dcmp和airflow的api请求删除dag任务
+        :param dag_name:
+        :return:
+        """
         dcmp_delete_api = utils.DELETE_DAG_API_BASE.format(host=self.host, dag_id=dag_name)
         airflow_delete_api = utils.AIRFLOW_DELETE_API.format(host=self.host, dag_name=dag_name)
         requests.get(url=dcmp_delete_api, headers=utils.LOGIN_HEADER_BASE)
@@ -67,24 +77,58 @@ class HttpDcmp(object):
         print("删除任务get请求状态码：{}".format(res.status_code))
 
     def trigger_dag_request(self, dag_name):
+        """
+        :param dag_name:
+        :return:
+        """
         trigger_api = utils.TRIGGER_DAG_API_BASE.format(host=self.host, dag_id=dag_name)
         utils.LOGIN_HEADER_BASE["X-CSRFToken"] = utils.CSRF_TOKEN
         res = requests.post(url=trigger_api, headers=utils.LOGIN_HEADER_BASE)
         print("触发任务执行post请求状态码：{}".format(res.status_code))
 
+    def kill_dag_by_dag_name(self, dag_name):
+        """
+        :param dag_name: 传入要 kill的 dag-name
+        :return:
+        """
+        try:
+            dcmpDag = DcmpDagDatabase(self.host)
+            result = dcmpDag.update_dag_state(dag_id=dag_name, state=FAILED)
+            return result
+
+        except Exception as e:
+            raise Exception(e)
+
     def ssh_excute_command(self, excute_command=None, dag_name=None):
+        """
+        :param excute_command:
+        :param dag_name: command 和 name 两者传入一个，触发远程airflow的dag或者执行一条命令
+        :return:
+        """
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(self.host, 22, utils.KD01_SSH_USER, utils.KD01_SSH_PWD, timeout=5)
-        if not dag_name is None:
-            stdin, stdout, stderr = ssh.exec_command(
-                'source /home/keydriver/airflow/bin/activate;airflow trigger_dag {}'.format(dag_name))
-        if not excute_command is None:
-            stdin, stdout, stderr = ssh.exec_command(excute_command)
-        print(stdout.read().decode('utf-8'))
-        ssh.close()
+        try:
+            ssh.connect(self.host, 22, utils.KD01_SSH_USER, utils.KD01_SSH_PWD, timeout=5)
+
+            if not dag_name is None:
+                stdin, stdout, stderr = ssh.exec_command(
+                    'source /home/keydriver/airflow/bin/activate;airflow trigger_dag {}'.format(dag_name))
+
+            if not excute_command is None:
+                stdin, stdout, stderr = ssh.exec_command(excute_command)
+
+            print(stdout.read().decode('utf-8'))
+            ssh.close()
+
+        except Exception as e:
+            raise Exception("ssh执行命令错误信息：{}".format(e))
 
     def paused_the_dag(self, dag_name, is_paused):
+        """
+        :param dag_name:
+        :param is_paused:
+        :return:
+        """
         is_paused = "true" if is_paused else "false"
         is_paused_url = utils.PAUSE_DAG_BASE.format(host=self.host, is_paused=is_paused, dag_id=dag_name)
         utils.LOGIN_HEADER_BASE["X-CSRFToken"] = utils.CSRF_TOKEN
@@ -94,6 +138,11 @@ class HttpDcmp(object):
     """ 下载数据运行的结果文件 """
 
     def download_result_file(self, remote_path, local_path):
+        """
+        :param remote_path:
+        :param local_path:
+        :return:
+        """
         transport = paramiko.Transport(self.host, 22)
         transport.connect(username=utils.KD01_SSH_USER, password=utils.KD01_SSH_PWD)
         channel = paramiko.SFTPClient.from_transport(transport)
@@ -101,9 +150,14 @@ class HttpDcmp(object):
         transport.close()
         print("文件download from{}to{}".format(remote_path, local_path))
 
-    """ 该方法用于修改一个dag的cron参数、command参数 """
-
     def modif_dag_conf(self, dag_name, new_cron=None, new_command=None):
+        """
+        该方法用于修改一个dag的cron参数、command参数
+        :param dag_name:
+        :param new_cron:
+        :param new_command:
+        :return:
+        """
         dcmpDag = DcmpDagDatabase(self.host)
         dagDic = dcmpDag.get_dag_conf_by_name(dag_name)
         if dagDic is not None:

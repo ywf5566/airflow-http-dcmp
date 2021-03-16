@@ -28,6 +28,22 @@ class DcmpDagDatabase(object):
             logging.exception("未查询到dag_name为{},错误信息{}".format(dag_name, e))
             return None
 
+    def update_dag_state(self, dag_id, state):
+        """
+        :param dag_id: 传入要 更新状态的dag id，更新dag state后同时更新task instance 的状态
+        :param state: 更新的状态
+        :return: 返回sql操作结果
+        """
+        sql = """update dag_run set state='{}' where dag_id='{}' and state='running'"""
+        task_sql = """update task_instance set state='{}' where dag_id='{}' and state='running'"""
+        connection = create_engine(self.mysql_uri)
+        try:
+            connection.execute(sql.format(state, dag_id))
+            result = connection.execute(task_sql.format(state, dag_id))
+            return result
+        except Exception as e:
+            raise Exception("Airflow--更新dag 状态错误信息：{}".format(e))
+
     def get_dag_status(self, dag_name):
         sql = 'select dag_id,state,start_date from dag_run where dag_id="{}" order by start_date desc'.format(dag_name)
         connection = create_engine(self.mysql_uri)
