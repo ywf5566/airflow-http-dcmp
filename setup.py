@@ -32,7 +32,9 @@ setup(
         'robobrowser',
         'paramiko',
         'croniter',
-        'sqlalchemy>=1.3.20'
+        'pymysql',
+        'lxml'
+        'sqlalchemy>=1.3.23'
     ],
     zip_safe=True,
 )
