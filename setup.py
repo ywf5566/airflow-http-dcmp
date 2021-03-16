@@ -33,7 +33,7 @@ setup(
         'paramiko',
         'croniter',
         'pymysql',
-        'lxml'
+        'lxml',
         'sqlalchemy>=1.3.23'
     ],
     zip_safe=True,
