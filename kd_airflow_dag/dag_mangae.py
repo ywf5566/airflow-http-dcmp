@@ -74,7 +74,8 @@ class HttpDcmp(object):
         requests.get(url=dcmp_delete_api, headers=utils.LOGIN_HEADER_BASE)
         utils.LOGIN_HEADER_BASE["X-CSRFToken"] = utils.CSRF_TOKEN
         res = requests.post(url=airflow_delete_api, headers=utils.LOGIN_HEADER_BASE)
-        print("删除任务get请求状态码：{}".format(res.status_code))
+        print("删除{}任务get请求状态码：{}".format(dag_name, res.status_code))
+        return res
 
     def trigger_dag_request(self, dag_name):
         """
@@ -84,7 +85,8 @@ class HttpDcmp(object):
         trigger_api = utils.TRIGGER_DAG_API_BASE.format(host=self.host, dag_id=dag_name)
         utils.LOGIN_HEADER_BASE["X-CSRFToken"] = utils.CSRF_TOKEN
         res = requests.post(url=trigger_api, headers=utils.LOGIN_HEADER_BASE)
-        print("触发任务执行post请求状态码：{}".format(res.status_code))
+        print("触发{}任务执行post请求状态码：{}".format(dag_name, res.status_code))
+        return res
 
     def kill_dag_by_dag_name(self, dag_name):
         """
@@ -133,7 +135,8 @@ class HttpDcmp(object):
         is_paused_url = utils.PAUSE_DAG_BASE.format(host=self.host, is_paused=is_paused, dag_id=dag_name)
         utils.LOGIN_HEADER_BASE["X-CSRFToken"] = utils.CSRF_TOKEN
         res = requests.post(url=is_paused_url, headers=utils.LOGIN_HEADER_BASE)
-        print("开关任务post请求状态码：{}".format(res))
+        print("开关任务{}post请求状态码：{}".format(dag_name, res.status_code))
+        return res
 
     """ 下载数据运行的结果文件 """
 
@@ -171,6 +174,10 @@ class HttpDcmp(object):
         else:
             logging.exception("dag_id :{} 有误！".format(dag_name))
 
+    """传入一个server 里的dag_name，返回dag的url"""
+    def get_dag_name_url(self, dag_name):
+        # 判断dag name是否存在
+        return utils.DAG_URL_BASE.format(self.host) + dag_name
 
 class HttpNewDag(object):
 
@@ -179,7 +186,8 @@ class HttpNewDag(object):
         self.cron = cron
         if cron is None:
             """ 如果没有cron， start_date 默认设置为两天前"""
-            self.start_date = datetime.now() - timedelta(days=2)
+            self.cron = "None"
+            self.start_date = str(datetime.now().replace(microsecond=0) - timedelta(days=2))
         else:
             """ 如果有cron，但是没有start_date，通过cron计算开始时间"""
             if start_date is None:
@@ -192,6 +200,9 @@ class HttpNewDag(object):
             tasks_list.append(task.get_dict())
         self.tasks = tasks_list
 
+    def get_dag_name(self):
+        return self.dag_name
+
     def get_dict(self):
         return {"dag_name": self.dag_name, "cron": self.cron, "start_date": self.start_date, "tasks": self.tasks}
 
@@ -199,17 +210,16 @@ class HttpNewDag(object):
 class HttpNewTask(object):
     """ 创建一个新的task，用于组装dag，默认执行本地bash命令，如需在别的服务器上执行，task_type为SSH，并带入SSH_conn_id """
 
-    def __init__(self, task_name, command, upstreams=[], task_type="Bash", SSH_conn_id="undefined"):
+    def __init__(self, task_name, command, upstreams=[], task_type="Bash", SSH_conn_id="undefined",
+                 trigger_rule="all_success"):
         self.task_name = task_name
         """ task_type : [Bash, SSH, TriggerDagRun] """
         self.task_type = task_type
         self.command = command + " "
         self.upstreams = upstreams
         self.SSH_conn_id = SSH_conn_id
+        self.trigger_rule = trigger_rule
 
     def get_dict(self):
         return {"task_name": self.task_name, "task_type": self.task_type, "command": self.command,
-                "upstreams": self.upstreams, "SSH_conn_id": self.SSH_conn_id}
-
-
-
+                "upstreams": self.upstreams, "SSH_conn_id": self.SSH_conn_id, "trigger_rule": self.trigger_rule}

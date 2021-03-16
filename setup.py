@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="kd_airflow_dag",
-    version='1.0.1',
+    version='1.0.0',
     author="WenFeng.yu",
     author_email="",
     description="通过Http请求的方式往不同服务器上的airflow服务进行dag任务的管理操作",
@@ -32,9 +32,7 @@ setup(
         'robobrowser',
         'paramiko',
         'croniter',
-        'pymysql',
-        'sqlalchemy>=1.3.20',
-        'lxml'
+        'sqlalchemy>=1.3.20'
     ],
     zip_safe=True,
 )

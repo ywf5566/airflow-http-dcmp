@@ -1,6 +1,6 @@
 # encoding: utf-8
 LOGIN_URL_BASE = 'http://{}:28080/admin/airflow/login'
-LOGIN_USER_BASE = 'afroot{}'
+LOGIN_USER_BASE = 'model{}'
 LOGIN_PWD_BASE = 'seekdata{}'
 KD01_SSH_USER = 'keydriver'
 KD01_SSH_PWD = '123456'
@@ -17,6 +17,7 @@ CREAT_DAG_API_BASE = 'http://{}:28080/admin/dagcreationmanager/api?api=update_da
 TRIGGER_DAG_API_BASE = 'http://{host}:28080/admin/airflow/trigger?dag_id={dag_id}&origin=http://{host}:28080/admin/'
 AIRFLOW_DELETE_API = 'http://{host}:28080/admin/airflow/delete?dag_id={dag_name}'
 PAUSE_DAG_BASE = 'http://{host}:28080/admin/airflow/paused?is_paused={is_paused}&dag_id={dag_id}'
+DAG_URL_BASE = 'http://{}:28080/admin/airflow/tree?dag_id='
 # request.type : GET
 DELETE_DAG_API_BASE = 'http://{host}:28080/admin/dagcreationmanager/api?api=delete_dag&dag_name={dag_id}'
 
