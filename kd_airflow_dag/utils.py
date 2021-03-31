@@ -4,7 +4,6 @@ LOGIN_USER_BASE = 'model{}'
 LOGIN_PWD_BASE = 'seekdata{}'
 KD01_SSH_USER = 'keydriver'
 KD01_SSH_PWD = '123456'
-CSRF_TOKEN = ''
 LOGIN_HEADER_BASE = {
     "User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                   'Chrome/87.0.4280.88 Safari/537.36 '

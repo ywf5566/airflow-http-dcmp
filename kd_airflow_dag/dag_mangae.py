@@ -27,7 +27,6 @@ class HttpDcmp(object):
         self.username = utils.get_username(host)
         self.password = utils.get_pwd(host)
         self.creat_dag_api = utils.CREAT_DAG_API_BASE.format(host)
-        self.get_cookies()
 
     def get_cookies(self):
         browse = robobrowser.RoboBrowser(parser='lxml')
@@ -39,13 +38,16 @@ class HttpDcmp(object):
             f['password'].value = self.password
             browse.submit_form(f)
             # 写入cookies
-            utils.LOGIN_HEADER_BASE["Cookie"] = 'widescreen=1; session=' + browse.session.cookies.values()[0]
+            login_header = utils.LOGIN_HEADER_BASE
+            login_header["Cookie"] = 'widescreen=1; session=' + browse.session.cookies.values()[0]
             # 获取csrf-token
             rest = re.search('CSRF\s=\s".*"', str(browse.find_all()))
             list_str = list(rest.group())
             del list_str[0:8]
             list_str.pop()
-            utils.CSRF_TOKEN = utils.CSRF_TOKEN.join(list_str)
+            login_header["X-CSRFToken"] = ''.join(list_str)
+            return login_header
+
         except Exception as e:
             logging.exception("登录信息有误！请检查输入的host信息是否正确！\n{}".format(e))
 
@@ -56,11 +58,12 @@ class HttpDcmp(object):
         :param newDag:
         :return:
         """
+        login_header = self.get_cookies()
         if not isinstance(newDag, dict):
             newDag = newDag.get_dict()
         session = requests.session()
         creat_api = self.creat_dag_api + newDag["dag_name"]
-        res = session.post(url=creat_api, headers=utils.LOGIN_HEADER_BASE, data=json.dumps(newDag))
+        res = session.post(url=creat_api, headers=login_header, data=json.dumps(newDag))
         print("创建任务post请求状态码：{}".format(res.status_code))
 
     def delete_dag_request(self, dag_name):
@@ -69,11 +72,11 @@ class HttpDcmp(object):
         :param dag_name:
         :return:
         """
+        login_header = self.get_cookies()
         dcmp_delete_api = utils.DELETE_DAG_API_BASE.format(host=self.host, dag_id=dag_name)
         airflow_delete_api = utils.AIRFLOW_DELETE_API.format(host=self.host, dag_name=dag_name)
-        requests.get(url=dcmp_delete_api, headers=utils.LOGIN_HEADER_BASE)
-        utils.LOGIN_HEADER_BASE["X-CSRFToken"] = utils.CSRF_TOKEN
-        res = requests.post(url=airflow_delete_api, headers=utils.LOGIN_HEADER_BASE)
+        requests.get(url=dcmp_delete_api, headers=login_header)
+        res = requests.post(url=airflow_delete_api, headers=login_header)
         print("删除{}任务get请求状态码：{}".format(dag_name, res.status_code))
         return res
 
@@ -82,14 +85,16 @@ class HttpDcmp(object):
         :param dag_name:
         :return:
         """
+        login_header = self.get_cookies()
         trigger_api = utils.TRIGGER_DAG_API_BASE.format(host=self.host, dag_id=dag_name)
-        utils.LOGIN_HEADER_BASE["X-CSRFToken"] = utils.CSRF_TOKEN
-        res = requests.post(url=trigger_api, headers=utils.LOGIN_HEADER_BASE)
+
+        res = requests.post(url=trigger_api, headers=login_header)
         print("触发{}任务执行post请求状态码：{}".format(dag_name, res.status_code))
         return res
 
     def kill_dag_by_dag_name(self, dag_name):
         """
+        手动使一个dag的状态marked failed
         :param dag_name: 传入要 kill的 dag-name
         :return:
         """
@@ -131,10 +136,10 @@ class HttpDcmp(object):
         :param is_paused:
         :return:
         """
+        login_header = self.get_cookies()
         is_paused = "true" if is_paused else "false"
         is_paused_url = utils.PAUSE_DAG_BASE.format(host=self.host, is_paused=is_paused, dag_id=dag_name)
-        utils.LOGIN_HEADER_BASE["X-CSRFToken"] = utils.CSRF_TOKEN
-        res = requests.post(url=is_paused_url, headers=utils.LOGIN_HEADER_BASE)
+        res = requests.post(url=is_paused_url, headers=login_header)
         print("开关任务{}post请求状态码：{}".format(dag_name, res.status_code))
         return res
 
@@ -175,9 +180,11 @@ class HttpDcmp(object):
             logging.exception("dag_id :{} 有误！".format(dag_name))
 
     """传入一个server 里的dag_name，返回dag的url"""
+
     def get_dag_name_url(self, dag_name):
         # 判断dag name是否存在
         return utils.DAG_URL_BASE.format(self.host) + dag_name
+
 
 class HttpNewDag(object):
 
