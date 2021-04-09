@@ -6,9 +6,8 @@ KD01_SSH_USER = 'keydriver'
 KD01_SSH_PWD = '123456'
 LOGIN_HEADER_BASE = {
     "User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                  'Chrome/87.0.4280.88 Safari/537.36 '
+                  'Chrome/87.0.4280.88 Safari/537.36'
 }
-CSRF_TOKEN = ''
 KD01_MYSQL_URI = 'mysql+pymysql://airflow:EEE@qxxtg123@192.168.100.199:3306/airflow2_for_source_code'
 KD02_MYSQL_URI = 'mysql+pymysql://airflow:EEE@qxxtg123@10.200.15.131:3306/airflow'
 KD03_MYSQL_URI = 'mysql+pymysql://airflow:EEE@qxxtg123@192.168.100.201:3306/airflow'
