@@ -23,8 +23,13 @@ class HttpDcmp(object):
         self.login_url = utils.LOGIN_URL_BASE.format(host)
         self.username = utils.get_username(host)
         self.password = utils.get_pwd(host)
+        self.login_header_base = utils.LOGIN_HEADER_BASE
         self.creat_dag_api = utils.CREAT_DAG_API_BASE.format(host)
-        self.get_cookies()
+        self.delete_dag_api = utils.DELETE_DAG_API_BASE
+        self.airflow_delete_api = utils.AIRFLOW_DELETE_API
+        self.trigger_dag_api = utils.TRIGGER_DAG_API_BASE
+        self.csrf_token = utils.CSRF_TOKEN
+        self.pause_dag_api = utils.PAUSE_DAG_BASE
 
     def get_cookies(self):
         browse = robobrowser.RoboBrowser(parser='lxml')
@@ -36,41 +41,45 @@ class HttpDcmp(object):
             f['password'].value = self.password
             browse.submit_form(f)
             # 写入cookies
-            utils.LOGIN_HEADER_BASE["Cookie"] = 'widescreen=1; session=' + browse.session.cookies.values()[0]
+            self.login_header_base["Cookie"] = 'widescreen=1; session=' + browse.session.cookies.values()[0]
             # 获取csrf-token
             rest = re.search('CSRF\s=\s".*"', str(browse.find_all()))
             list_str = list(rest.group())
             del list_str[0:8]
             list_str.pop()
-            utils.CSRF_TOKEN = utils.CSRF_TOKEN.join(list_str)
+            self.csrf_token = self.csrf_token.join(list_str)
         except Exception as e:
             logging.exception("登录信息有误！请检查输入的host信息是否正确！\n{}".format(e))
 
     """ 创建dag任务， """
 
     def creat_dag_request(self, newDag):
+        self.get_cookies()
         if not isinstance(newDag, dict):
             newDag = newDag.get_dict()
         session = requests.session()
         creat_api = self.creat_dag_api + newDag["dag_name"]
-        res = session.post(url=creat_api, headers=utils.LOGIN_HEADER_BASE, data=json.dumps(newDag))
+        res = session.post(url=creat_api, headers=self.login_header_base, data=json.dumps(newDag))
         print("创建任务post请求状态码：{}".format(res.status_code))
+        return res
 
     """ 通过dcmp和airflow的api请求删除dag任务 """
 
     def delete_dag_request(self, dag_name):
-        dcmp_delete_api = utils.DELETE_DAG_API_BASE.format(host=self.host, dag_id=dag_name)
-        airflow_delete_api = utils.AIRFLOW_DELETE_API.format(host=self.host, dag_name=dag_name)
-        requests.get(url=dcmp_delete_api, headers=utils.LOGIN_HEADER_BASE)
-        utils.LOGIN_HEADER_BASE["X-CSRFToken"] = utils.CSRF_TOKEN
-        res = requests.post(url=airflow_delete_api, headers=utils.LOGIN_HEADER_BASE)
+        self.get_cookies()
+        dcmp_delete_api = self.delete_dag_api.format(host=self.host, dag_id=dag_name)
+        airflow_delete_api = self.airflow_delete_api.format(host=self.host, dag_name=dag_name)
+        requests.get(url=dcmp_delete_api, headers=self.login_header_base)
+        self.login_header_base["X-CSRFToken"] = self.csrf_token
+        res = requests.post(url=airflow_delete_api, headers=self.login_header_base)
         print("删除{}任务get请求状态码：{}".format(dag_name, res.status_code))
         return res
 
     def trigger_dag_request(self, dag_name):
-        trigger_api = utils.TRIGGER_DAG_API_BASE.format(host=self.host, dag_id=dag_name)
-        utils.LOGIN_HEADER_BASE["X-CSRFToken"] = utils.CSRF_TOKEN
-        res = requests.post(url=trigger_api, headers=utils.LOGIN_HEADER_BASE)
+        self.get_cookies()
+        trigger_api = self.trigger_dag_api.format(host=self.host, dag_id=dag_name)
+        self.login_header_base["X-CSRFToken"] = self.csrf_token
+        res = requests.post(url=trigger_api, headers=self.login_header_base)
         print("触发{}任务执行post请求状态码：{}".format(dag_name, res.status_code))
         return res
 
@@ -87,10 +96,11 @@ class HttpDcmp(object):
         ssh.close()
 
     def paused_the_dag(self, dag_name, is_paused):
+        self.get_cookies()
         is_paused = "true" if is_paused else "false"
-        is_paused_url = utils.PAUSE_DAG_BASE.format(host=self.host, is_paused=is_paused, dag_id=dag_name)
-        utils.LOGIN_HEADER_BASE["X-CSRFToken"] = utils.CSRF_TOKEN
-        res = requests.post(url=is_paused_url, headers=utils.LOGIN_HEADER_BASE)
+        is_paused_url = self.pause_dag_api.format(host=self.host, is_paused=is_paused, dag_id=dag_name)
+        self.login_header_base["X-CSRFToken"] = self.csrf_token
+        res = requests.post(url=is_paused_url, headers=self.login_header_base)
         print("开关任务{}post请求状态码：{}".format(dag_name, res.status_code))
         return res
 
