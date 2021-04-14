@@ -108,6 +108,14 @@ class HttpDcmp(object):
         print("开关任务{}post请求状态码：{}".format(dag_name, res.status_code))
         return res
 
+    def kill_dag_by_day_name(self, dag_name):
+        try:
+            dcmpDag = DcmpDagDatabase(self.host)
+            result = dcmpDag.update_dag_state(dag_id=dag_name, state="failed")
+            logging.info(result)
+        except Exception as e:
+            logging.exception("kill-dag错误信息：{}".format(e))
+
     """ 下载数据运行的结果文件 """
 
     def download_result_file(self, remote_path, local_path):
