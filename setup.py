@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="kd_airflow_dag",
-    version='1.1.3',
+    version='1.1.4',
     author="WenFeng.yu",
     author_email="",
     description="通过Http请求的方式往不同服务器上的airflow服务进行dag任务的管理操作",

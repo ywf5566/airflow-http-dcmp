@@ -18,22 +18,26 @@ from croniter import croniter
 class HttpDcmp(object):
     """ 初始化需要传入的参数：host,(kd01 或者 192.168.100.199) """
 
-    def __init__(self, host):
+    def __init__(self, host, username=None, password=None):
+        if username is None and password is None:  # 默认用model用户登录
+            self.username = utils.AirflowLoginConf[host]["model"]["username"]
+            self.password = utils.AirflowLoginConf[host]["model"]["pwd"]
+        else:
+            self.username = username
+            self.password = password
         self.host = host
-        self.login_url = utils.LOGIN_URL_BASE.format(host)
-        self.username = utils.get_username(host)
-        self.password = utils.get_pwd(host)
-        self.login_header_base = utils.LOGIN_HEADER_BASE
-        self.creat_dag_api = utils.CREAT_DAG_API_BASE.format(host)
-        self.delete_dag_api = utils.DELETE_DAG_API_BASE
-        self.airflow_delete_api = utils.AIRFLOW_DELETE_API
-        self.trigger_dag_api = utils.TRIGGER_DAG_API_BASE
-        self.csrf_token = ""
-        self.pause_dag_api = utils.PAUSE_DAG_BASE
+        self._login_url = utils.AirflowRequestApi.LOGIN_URL_BASE.value.format(host)
+        self._login_header_base = utils.LOGIN_HEADER_BASE
+        self._creat_dag_api = utils.AirflowRequestApi.CREAT_DAG_API_BASE.value
+        self._delete_dag_api = utils.AirflowRequestApi.DELETE_DAG_API_BASE.value
+        self._airflow_delete_api = utils.AirflowRequestApi.AIRFLOW_DELETE_API.value
+        self._trigger_dag_api = utils.AirflowRequestApi.TRIGGER_DAG_API_BASE.value
+        self._csrf_token = ""
+        self._pause_dag_api = utils.AirflowRequestApi.PAUSE_DAG_BASE.value
 
-    def get_cookies(self):
+    def _get_cookies(self):
         browse = robobrowser.RoboBrowser(parser='lxml')
-        browse.open(self.login_url)
+        browse.open(self._login_url)
         f = browse.get_form(action='/admin/airflow/login')
         # 登录的账号
         try:
@@ -41,25 +45,25 @@ class HttpDcmp(object):
             f['password'].value = self.password
             browse.submit_form(f)
             # 写入cookies
-            self.login_header_base["Cookie"] = 'widescreen=1; session=' + browse.session.cookies.values()[0]
+            self._login_header_base["Cookie"] = 'widescreen=1; session=' + browse.session.cookies.values()[0]
             # 获取csrf-token
             rest = re.search('CSRF\s=\s".*"', str(browse.find_all()))
             list_str = list(rest.group())
             del list_str[0:8]
             list_str.pop()
-            self.csrf_token = ''.join(list_str)
+            self._csrf_token = ''.join(list_str)
         except Exception as e:
             logging.exception("登录信息有误！请检查输入的host信息是否正确！\n{}".format(e))
 
     """ 创建dag任务， """
 
     def creat_dag_request(self, newDag):
-        self.get_cookies()
+        self._get_cookies()
         if not isinstance(newDag, dict):
             newDag = newDag.get_dict()
         session = requests.session()
-        creat_api = self.creat_dag_api + newDag["dag_name"]
-        login_header = self.login_header_base
+        creat_api = self._creat_dag_api.format(self.host) + newDag["dag_name"]
+        login_header = self._login_header_base
         res = session.post(url=creat_api, headers=login_header, data=json.dumps(newDag))
         print("创建任务post请求状态码：{}".format(res.status_code))
         return res
@@ -67,26 +71,26 @@ class HttpDcmp(object):
     """ 通过dcmp和airflow的api请求删除dag任务 """
 
     def delete_dag_request(self, dag_name):
-        self.get_cookies()
-        dcmp_delete_api = self.delete_dag_api.format(host=self.host, dag_id=dag_name)
-        airflow_delete_api = self.airflow_delete_api.format(host=self.host, dag_name=dag_name)
-        login_header = self.login_header_base
+        self._get_cookies()
+        dcmp_delete_api = self._delete_dag_api.format(host=self.host, dag_id=dag_name)
+        airflow_delete_api = self._airflow_delete_api.format(host=self.host, dag_name=dag_name)
+        login_header = self._login_header_base
         requests.get(url=dcmp_delete_api, headers=login_header)
-        login_header["X-CSRFToken"] = self.csrf_token
+        login_header["X-CSRFToken"] = self._csrf_token
         res = requests.post(url=airflow_delete_api, headers=login_header)
         print("删除{}任务get请求状态码：{}".format(dag_name, res.status_code))
         return res
 
     def trigger_dag_request(self, dag_name):
-        self.get_cookies()
-        trigger_api = self.trigger_dag_api.format(host=self.host, dag_id=dag_name)
-        login_header = self.login_header_base
-        login_header["X-CSRFToken"] = self.csrf_token
+        self._get_cookies()
+        trigger_api = self._trigger_dag_api.format(host=self.host, dag_id=dag_name)
+        login_header = self._login_header_base
+        login_header["X-CSRFToken"] = self._csrf_token
         res = requests.post(url=trigger_api, headers=login_header)
         print("触发{}任务执行post请求状态码：{}".format(dag_name, res.status_code))
         return res
 
-    def ssh_excute_command(self, excute_command=None, dag_name=None):
+    def _ssh_excute_command(self, excute_command=None, dag_name=None):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(self.host, 22, utils.KD01_SSH_USER, utils.KD01_SSH_PWD, timeout=5)
@@ -99,11 +103,11 @@ class HttpDcmp(object):
         ssh.close()
 
     def paused_the_dag(self, dag_name, is_paused):
-        self.get_cookies()
+        self._get_cookies()
         is_paused = "true" if is_paused else "false"
-        is_paused_url = self.pause_dag_api.format(host=self.host, is_paused=is_paused, dag_id=dag_name)
-        login_header = self.login_header_base
-        login_header["X-CSRFToken"] = self.csrf_token
+        is_paused_url = self._pause_dag_api.format(host=self.host, is_paused=is_paused, dag_id=dag_name)
+        login_header = self._login_header_base
+        login_header["X-CSRFToken"] = self._csrf_token
         res = requests.post(url=is_paused_url, headers=login_header)
         print("开关任务{}post请求状态码：{}".format(dag_name, res.status_code))
         return res
@@ -112,13 +116,14 @@ class HttpDcmp(object):
         try:
             dcmpDag = DcmpDagDatabase(self.host)
             result = dcmpDag.update_dag_state(dag_id=dag_name, state="failed")
-            logging.info(result)
+            return result
         except Exception as e:
             logging.exception("kill-dag错误信息：{}".format(e))
+            return False
 
     """ 下载数据运行的结果文件 """
 
-    def download_result_file(self, remote_path, local_path):
+    def _download_result_file(self, remote_path, local_path):
         transport = paramiko.Transport(self.host, 22)
         transport.connect(username=utils.KD01_SSH_USER, password=utils.KD01_SSH_PWD)
         channel = paramiko.SFTPClient.from_transport(transport)
@@ -145,7 +150,8 @@ class HttpDcmp(object):
     """传入一个server 里的dag_name，返回dag的url"""
     def get_dag_name_url(self, dag_name):
         # 判断dag name是否存在
-        return utils.DAG_URL_BASE.format(self.host) + dag_name
+        return utils.AirflowRequestApi.DAG_URL_BASE.format(self.host) + dag_name
+
 
 class HttpNewDag(object):
 
