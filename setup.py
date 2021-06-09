@@ -4,10 +4,10 @@ from setuptools import setup, find_packages
 
 setup(
     name="kd_airflow_dag",
-    version='1.1.4',
+    version='1.1.5',
     author="WenFeng.yu",
     author_email="",
-    description="通过Http请求的方式往不同服务器上的airflow服务进行dag任务的管理操作",
+    description="修改适用于kd02和kd05",
     license="MIT",
     url="",
     packages=find_packages(exclude=['tests', 'test*']),
@@ -31,6 +31,7 @@ setup(
         'requests',
         'robobrowser',
         'paramiko',
+        'lxml',
         'croniter',
         'sqlalchemy>=1.3.23'
     ],

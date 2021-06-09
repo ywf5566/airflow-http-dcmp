@@ -14,8 +14,10 @@ class DcmpDagDatabase(object):
             self.mysql_uri = utils.MysqlUrl["kd01_mysql_uri"]
         if host == "kd03" or host == "192.168.100.201":
             self.mysql_uri = utils.MysqlUrl["kd03_mysql_uri"]
-        if host == "kd04" or host == "10.200.15.132":
+        if host == "kd02" or host == "10.200.15.131":
             self.mysql_uri = utils.MysqlUrl["kd02_mysql_uri"]
+        if host == "kd05" or host == "10.200.15.133":
+            self.mysql_uri = utils.MysqlUrl["kd05_mysql_uri"]
 
     def get_dag_conf_by_name(self, dag_name):
         sql = 'select dag_name,conf from dcmp_dag_conf where dag_name="{}" order by version desc'.format(dag_name)

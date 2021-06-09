@@ -55,7 +55,7 @@ class HttpDcmp(object):
         except Exception as e:
             logging.exception("登录信息有误！请检查输入的host信息是否正确！\n{}".format(e))
 
-    """ 创建dag任务， """
+    """ 创建dag任务 """
 
     def creat_dag_request(self, newDag):
         self._get_cookies()

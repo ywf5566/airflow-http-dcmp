@@ -10,8 +10,9 @@ LOGIN_HEADER_BASE = {
 
 MysqlUrl = {
     "kd01_mysql_uri": "mysql+pymysql://airflow:EEE@qxxtg123@192.168.100.199:3306/airflow2_for_source_code",
-    "kd02_mysql_uri": "mysql+pymysql://airflow:EEE@qxxtg123@10.200.15.131:3306/airflow",
-    "kd03_mysql_uri": "mysql+pymysql://airflow:EEE@qxxtg123@192.168.100.201:3306/airflow"
+    "kd02_mysql_uri": "mysql+pymysql://airflow:EEE@qxxtg123@10.200.15.131:3306/airflow-local",
+    "kd03_mysql_uri": "mysql+pymysql://airflow:EEE@qxxtg123@192.168.100.201:3306/airflow",
+    "kd05_mysql_uri": "mysql+pymysql://airflow:EEE@qxxtg123@10.200.15.133:3306/airflow"
 }
 ssh_server_login = {}
 
@@ -40,6 +41,10 @@ AirflowLoginConf = {
         "root": {"username": "afroot01", "pwd": "seekdata01"},
         "model": {"username": "model01", "pwd": "seekdata01"}
     },
+    "kd02": {
+        "root": {"username": "afroot02", "pwd": "seekdata02"},
+        "model": {"username": "model02", "pwd": "seekdata02"}
+    },
     "kd03": {
         "root": {"username": "afroot03", "pwd": "seekdata03"},
         "model": {"username": "model03", "pwd": "seekdata03"}
@@ -47,6 +52,10 @@ AirflowLoginConf = {
     "kd04": {
         "root": {"username": "afroot04", "pwd": "seekdata04"},
         "model": {"username": "model04", "pwd": "seekdata04"}
+    },
+    "kd05": {
+        "root": {"username": "afroot05", "pwd": "seekdata05"},
+        "model": {"username": "model05", "pwd": "seekdata05"}
     },
 
     "192.168.100.199": {
@@ -61,5 +70,9 @@ AirflowLoginConf = {
         "root": {"username": "afroot04", "pwd": "seekdata04"},
         "model": {"username": "model04", "pwd": "seekdata04"}
     },
+    "10.200.15.133": {
+        "root": {"username": "afroot05", "pwd": "seekdata05"},
+        "model": {"username": "model05", "pwd": "seekdata05"}
+    }
 }
 
